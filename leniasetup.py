@@ -2,7 +2,7 @@ import numpy as np
 import scipy.signal
 import matplotlib.pylab as plt
 import matplotlib.animation
-import IPython.display
+# import IPython.display
 import json
 
 # np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
@@ -478,4 +478,389 @@ def give_conv_from_name(animal_name):
       print(f"Animal '{animal_name}' not found.")
       return None
 
-  
+""" import numpy as np
+import json
+import PIL.ImageFont, PIL.BdfFontFile, PIL.PcfFontFile # Added PIL imports
+# Assuming STATUS is defined elsewhere or can be ignored for this context
+STATUS = [] # Placeholder for STATUS list
+
+# Constants
+DIM_DELIM = {0:'', 1:'$', 2:'%', 3:'#', 4:'@A', 5:'@B', 6:'@C', 7:'@D', 8:'@E', 9:'@F'}
+DIM = 3  # Set the appropriate dimension value based on your context
+
+# Dummy Board class to satisfy dependencies for Lenia class methods
+class Board:
+    def __init__(self, size):
+        self.params = {'R': 10} # Dummy R value
+        self.names = ['', '', ''] # Dummy names
+
+    @staticmethod
+    def from_data(data):
+        # This is a dummy implementation. In a real scenario, it would convert
+        # data into a Board object. For now, just return a simple structure.
+        return {'R': data.get('R', 10), 'T': data.get('T', 5), 'cells': data.get('cells', [])}
+
+# Dummy Automaton, Analyzer, Recorder classes
+class Automaton:
+    def __init__(self, world):
+        pass
+
+class Analyzer:
+    def __init__(self, automaton):
+        pass
+
+class Recorder:
+    def __init__(self, world):
+        pass
+
+class Lenia:
+    MARKER_COLORS_W = [0x5F,0x5F,0x5F,0x7F,0x7F,0x7F,0xFF,0xFF,0xFF]
+    MARKER_COLORS_B = [0x9F,0x9F,0x9F,0x7F,0x7F,0x7F,0x0F,0x0F,0x0F]
+    POLYGON_NAME = {1:'irregular', 2:'bilateral', 3:'trimeric', 4:'tetrameric', 5:'pentameric', 
+        6:'hexameric', 7:'heptameric', 8:'octameric', 9:'nonameric', 10:'decameric', 0:'polymeric'}
+    SAVE_ROOT = 'save'
+    ANIMALS_PATH = 'animals.json' if DIM==2 else 'animals'+str(DIM)+'D.json'
+    FOUND_ANIMALS_PATH = 'found.json'
+
+    def __init__(self):
+        self.is_run = True
+        self.run_counter = -1
+        self.is_closing = False
+        self.is_advanced_menu = False
+
+        self.show_what = 0
+        self.polar_mode = 0
+        self.markers_mode = 0
+
+        self.stats_mode = 0
+        self.stats_x = 4
+        self.stats_y = 5
+        self.is_group_params = False
+        self.is_draw_params = False
+        self.is_auto_center = False
+        self.auto_rotate_mode = 0
+
+        self.is_show_fps = False
+        self.fps = None
+        self.last_time = None
+
+        self.fore = None
+        self.back = None
+        self.is_layered = False
+        self.is_auto_load = False
+        self.last_seed = None
+        self.backup_world = None
+        self.backup_automaton = None
+        self.backup_analyzer = None
+
+        self.search_mode = None
+        self.is_search_small = False
+        self.is_show_search = False
+        self.search_total = 0
+        self.search_success = 0
+        
+        self.colormap_id = 0
+
+        self.last_key = None
+        self.excess_key = None
+        self.info_type = 'animal'
+        self.clear_job = None
+        self.clipboard_st = ""
+        self.is_save_image = False
+        self.file_seq = 0
+
+        self.samp_freq = 1
+        self.samp_gen = 1
+        self.samp_rotate = 0
+        self.is_samp_clockwise = False
+        self.samp_sides = 1
+
+        self.animal_id = 0
+        self.found_animal_id = 0
+        self.animal_data = None
+        self.found_animal_data = None
+        self.read_animals()
+        self.read_found_animals()
+        
+        # Dummy initializations for world, automaton, analyzer, recorder, font
+        # These are not strictly necessary for the `give_conv_from_name` function,
+        # but are part of the original Lenia class structure.
+        # Commented out as they require more complex setup not provided in the snippet.
+        # self.world = Board(list(reversed(SIZE)))
+        # self.automaton = Automaton(self.world)
+        # self.analyzer = Analyzer(self.automaton)
+        # self.recorder = Recorder(self.world)
+        # self.clear_transform()
+        # self.create_window()
+        # self.create_menu()
+        # self.font = PIL.ImageFont.load('resource/bitocra-13.pil')
+
+    def search_animal_by_name(self, name):
+
+        if self.animal_data is None or not self.animal_data:
+            return None
+        
+        exact_match_animal = None
+        partial_match_animal = None
+
+        for animal in self.animal_data:
+            animal_name_lower = animal.get('name', '').lower()
+            animal_code = animal.get('code', '')
+
+            # Skip category entries (those with codes starting with '>')
+            if animal_code.startswith('>'):
+                continue
+
+            if name.lower() == animal_name_lower:
+                # Found an exact match for a non-category animal, return immediately
+                return animal
+            elif name.lower() in animal_name_lower:
+                # Found a partial match for a non-category animal
+                if partial_match_animal is None: # Store the first partial match found
+                    partial_match_animal = animal
+        
+        # If no exact non-category match was found, return the first partial non-category match
+        if partial_match_animal:
+            return partial_match_animal
+        
+        return None # No suitable animal found
+
+    def convert_font_run_once(self, font_file_path):
+        ''' https://stackoverflow.com/questions/48304078/python-pillow-and-font-conversion '''
+        ''' https://github.com/ninjaaron/bitocra '''
+        with open(font_file_path, 'rb') as fp:
+            p = PIL.BdfFontFile.BdfFontFile(fp) #PcfFontFile if you're reading PCF files
+            p.save(font_file_path)
+
+    def clear_transform(self):
+        # Dummy implementation as world is not initialized here
+        self.tx = {'shift':[0]*DIM, 'rotate':[0]*3, 'R':10, 'flip':-1} # Use a default R
+
+    def read_animals(self):
+        is_replace = self.animal_data is not None
+        try:
+            # For demonstration, we'll use the provided animals.JSON content directly
+            # In a real application, you would load from a file.
+            animals_json_content = """
+[{"code":">1","name":"class: Exokernel","cname":"外核綱 ソトカク綱"},
+    {"code":">2","name":"order: Orbiformes","cname":"球形目 タマムシ目"},
+        {"code":">3","name":"family: O Orbidae","cname":"球形科 タマムシ科"},
+            {"code":">4","name":"subfamily: Haplorbinae","cname":"單球亞科"},
+                {"code":"O2u","name":"Orbium unicaudatus","cname":"球虫(單尾)","params":{"R":13,"T":10,"b":"1","m":0.15,"s":0.015,"kn":1,"gn":1},"cells":"7.MD6.qL$6.pKqEqFURpApBRAqQ$5.VqTrSsBrOpXpWpTpWpUpCrQ$4.CQrQsTsWsApITNPpGqGvL$3.IpIpWrOsGsBqXpJ4.LsFrL$A.DpKpSpJpDqOqUqSqE5.ExD$qL.pBpTT2.qCrGrVrWqM5.sTpP$.pGpWpD3.qUsMtItQtJ6.tL$.uFqGH3.pXtOuR2vFsK5.sM$.tUqL4.GuNwAwVxBwNpC4.qXpA$2.uH5.vBxGyEyMyHtW4.qIpL$2.wV5.tIyG3yOxQqW2.FqHpJ$2.tUS4.rM2yOyJyOyHtVpPMpFqNV$2.HsR4.pUxAyOxLxDxEuVrMqBqGqKJ$3.sLpE3.pEuNxHwRwGvUuLsHrCqTpR$3.TrMS2.pFsLvDvPvEuPtNsGrGqIP$4.pRqRpNpFpTrNtGtVtStGsMrNqNpF$5.pMqKqLqRrIsCsLsIrTrFqJpHE$6.RpSqJqPqVqWqRqKpRXE$8.OpBpIpJpFTK!"},
+                {"code":"O2ui","name":"Orbium unicaudatus ignis","cname":"球虫(單尾焰)","params":{"R":13,"T":10,"b":"1","m":0.11,"s":0.012,"kn":1,"gn":1},"cells":"8.DPXUD$5.pFqMqRpTpW2qBqDpXB$4.HrHsLrVqFpTpJXpCpSqMsL$3.UpWrSrAqCpKQA3.SqPsV$2.pBqAqEqApSpIpN6.CsS$.EpWqApIQpBqVrNqL7.wO$.pIqCXB2.rP2sUqF6.U$.pXpR4.sEuBuKtW7.uJ$PqHpA4.rTuTvNvMtL6.qR$DqSO5.vDwLwUwI7.pN$.tHK5.uUxBxUxWtF6.qK$.vCO5.LxM2yOxT6.qG$2.pN6.uE3yOsN4.SpU$2.wU6.CxQ2yOvWqJ3.pSpK$2.H7.tU2xTwSuGrGpUqAqER$3.tL6.rLwDwPwBvAtGrQqUpQ$3.CqS5.qXuTvHuJtJsJrFpWR$4.pJqC3.IrJtNtJsFrEqKpOS$5.pCqGpNpMqErKrXrIqHpNpDPC$6.HpNqAqGqJqEpOpDPKA$8.EPSQNIC!"},
+                {"code":"O2b","name":"Orbium bicaudatus","cname":"球虫(雙尾)","params":{"R":13,"T":10,"b":"1","m":0.15,"s":0.014,"kn":1,"gn":1},"cells":"13.pK$14.qV$6.VpA.MpEpKpITqV$4.BpPpNrIrEqDpWpOpLpUqNvT$4.IqRrNsPsKqHJ3.GqOuC$4.TrLsTrPrLpS6.uUD$3.SpWqNrBqLpRqPqE6.vA$2.FpTpMLpHqPqHrVsPrS5.qUqA$K.pCpRG.ErFsRsVuSuPqN4.CrR$pA.pTU3.rWuBuRvXwTwKpF4.rCH$.tPqHH3.qFvAwUwVyJyKwNL2.DqLR$.pGsGA4.vPxSyDxE2yOuHS.XqJT$2.xIE4.sCyHyOvLvRyFxCsGpVpXqGP$2.VsU4.DxQyOvVuSwDwQuBrMqSqCF$3.vG5.tEyKwVvIvKvMtVrXqTpM$4.sU4.qFvDwMvNuUuDsUrKqDO$4.qCrDJ2.pPsKuGuHtOsQrNqKpC$5.pTqTpVpNqFrJsGsKrVrDqFpFD$6.QqCqJqPqVqXqRqHpOTC$8.LWpFpEXPG!"},
+                {"code":"O2bi","name":"Orbium bicaudatus ignis","cname":"球虫(雙尾焰)","params":{"R":13,"T":10,"b":"1","m":0.1,"s":0.008,"kn":1,"gn":1},"cells":"8.HK$6.rBqTrRrLF2M$6.rSqHpBsMpO2pMpIW.pC$4.HRrMpPpVpSpMLDJpCpJpT$3.NpEpLqBpETF5.UpU$O.LpKWH.pD2.qQ5.pJqS$2.pIV3.rJqIpTtBpE5.vU$.XpQ4.sOsQqRtJtO5.sS$.tLpI4.tDuArQsOvGX4.RJ$.sCR4.rXuJrCqVvEtJ5.qB$2.M4.qAwGsIqFvJxW5.qE$2.sH5.yHuGpOtKyKqU3.JpS$2.tC5.wNwBsCtGvXsX3.pLW$2.qG5.sSvOtNtJuLtTqFPpCqCB$3.qT4.qRuLtXtMtWuBsKqTqGpF$3.pEpU3.qVuAuBtDsWsOrMqKpK$4.pHqEpPqCrQsSsGrAqBpRpLVC$5.NpRqDqJqGpPpBROK$7.J2ROKGA!"},
+                {"code":"O2p","name":"Orbium phantasma","cname":"球虫(幻)","params":{"R":13,"T":40,"b":"1","m":0.13,"s":0.009,"kn":1,"gn":1},"cells":"7.pJOSR2LvA$3.pJqJATrHpKpIpJpOpQvEpH$3.qPrTpHpKqAqB2ADPpRxD$3.MsLpDE.qSpW4.rGuQ$2.HpPqTpD2.rSsVpX4.sDrD$2.pGpH.qPqHWqNuJuMpG4.sK$.HpUE.qKtFqWpRsTwKuW4.qDpO$RpApM3.tVuFrGsIwHyEtB3.pEqG$qBpUpB3.rWwUvDtCuOyOxJqK2.pJpX$.uVpE4.xOyOtLsHvKxOtLpDOqBpI$2.uR4.uXyOuNsAtCvJuKrEqFqJL$2.tWqK3.sAxFvDsMsItRtVsCqUpQ$3.tDpE2.qDuGuStDsLsTsQrKqBM$3.RrRpSWpXsFtNtDsHrRqWpVS$4.SqUqSqTrLrXrQqWqCpJPA$5.DpHpXqEqCpSpHTH$7.AGIHDA!"},
+                {"code":"O2v","name":"Orbium virtualis","cname":"球虫(虛)","params":{"R":13,"T":320,"b":"1","m":0.05,"s":0.004,"kn":1,"gn":1},"cells":"11.K$5.I4.A.pQ$5.JXGMOPQRqM$2.GB.DpHpLLG2DHTqX$3.XK2OpDN5.pDqF$3.XpHKBHpFM5.pOU$2.DNpFQ.EpFpXS4.BpKB$2.KMBpDpCPpAqDqPpA4.UP$.BNF.OqBpNpFpVrDrGpG3.MS$MEOB2.pWqNpWpXqTrXrLpJDCMRB$pI2O3.OqVrAqLqIqXrQqUpHPQRB$.qPQ4.pWrSrHqCpWqOqWqBpEUPA$2.qS4.KrBrTqLpTqAqJqCpJWL$2.pWpF4.pKrEqWqE2pXpSpFSF$3.qFI3.JpUqNqHpWpQpHVKA$4.pOK2.GpApRpUpOpFVLC$4.DpCTNOVpEpFpARKC$5.AMRSTSPLFB$8.C2DBA!"},
+                {"code":"O2v","name":"Orbium virtualis","cname":"球虫(虛)","params":{"R":13,"T":1280,"b":"1","m":0.004,"s":0.0004,"kn":1,"gn":1},"cells":"13.A$14.C$6.2A2.5AC$4.3A2B6AD$5.2BCDBA5.F$5.B4C7.E$4.2ADC3B6.2B$3.4A3B2C6.C$3.2A2.B2CDEC5.2A$2.2A3.A3DEFC4.AB$.C2A4.C2EF2GC3.AB$2.CA4.AEGFGHFC2.AB$2.CB5.D2G3FEBABA$3.F5.AFG4ED2BA$3.AC5.DFEDE2D2BA$4.CA4.B3E2DCBA$5.CA3.AC2D2CB2A$6.B4AB3CB2A$7.ABA5B2A$9.6A$!"},
+                {"code":"OG2g","name":"Gyrorbium gyrans","cname":"旋球虫","params":{"R":13,"T":10,"b":"1","m":0.156,"s":0.0224,"kn":1,"gn":1},"cells":"10.EL2QLE$7.TpU2qHqCpXpUpNpFL$4.JrVtTuKuPuKtLrXqTqHqCpPpDG$3.qWtDqRpKqEsMuXvBtGrApXpUpSpIO$2.rQrN4.pAuAvRtTrIpUpIpKpFO$.pSsM6.tJwFuNsPsFrVpPpDL$.uFB6.tJ2yO2yLyOyDsKL$pDuC6.pFxW3yOwIwD2xPqH$rNtV5.EsMxCyIyOwXtJsMtJwFuX$sHuSV3.EpDvOwFxEwQsRqR2qHsFvWE$rQvJsWpPQpKpSqCvEvBuCpD3.BpDtGrQ$pXuKvMuPtLsWsCrIuCtBrS6.qWrQ$EsKvEwXyBwLtVrVsCrDqH6.pXrG$.qHtVxJyOwQrQpNqJpPV6.qJqE$.JsUxMyOrX10.pFqRJ$2.rQxPwIpI9.pKqJT$2.qJxEuPpKB7.qCpP$2.EvOvMpPO5.TrGqH$3.sCyOqEpIOEBOqHqEsRtG$4.xMsMqJqCpXqJqRpIqOuCtBsF$5.xPrAqTqMpSE.rSsMrLqRqHV.TpS$6.vErDE2.VpPB$7.pIrNqHpKQ!"},
+                {"code":"OG2r","name":"Gyrorbium revolvens","cname":"旋球虫(迴)","params":{"R":13,"T":10,"b":"1","m":0.133,"s":0.0177,"kn":1,"gn":1},"cells":"$11.pIqOpMSH2C2E$8.qQtCvBvSwP2yEsIqSpWpSpOVB$7.JqGrApXpGpLsCwVyOuKsJsFsCrLqCA$7.pIqLP2.EVsAyKyOtNtItBsWsKqF$7.qDS4.CqEvSyOvRsVrVrBrOsBU$6.PpT6.pVvAyOyJrNpH.GqTrG$G5.VpK6.pPuKyOvMqB4.rLF$6.VW6.pNxGxVsUpH4.qFpF$5.pNqQqG.DRXpBrQuOwNxIrPpD4.pJpU$4.pRtGsEqJ.HRpTrQtHuKvWvXrBpE4.pJpT$4.pOrWpOpE5.OsNwCvPrKpL4.qGpC$2.DRpMqBJpP6.rMwEvXsJqC4.rOC$3.pPpWN.pR6.pJwBwFtJrHX.ArArB$3.pGqXM.pSP5.N2vOtWsRrIqPrNsGG$4.rLqT.pBpO5.qMvIuRtVtLtDtAsRpN$5.tAqMHqApA3.AtNuOtWtLtDsRrVpK$6.tAtUqQqIpOTqXuGuOtUtArXrCpVE$8.tDwOxVxNvWuDsVrOqEW$12.DKD!"},
+                {"code":"OV2u","name":"Vagorbium undulatus","cname":"遊球虫","params":{"R":20,"T":10,"b":"1","m":0.2,"s":0.031,"kn":1,"gn":1},"cells":"17.DWqD2qUqES$7.D2FDCBCHqGsTvBwQxL2xSxOwWvJsSpC$5.DJOQPNMPqWtQwHyAyHxLwAuSuGuTwBxLxXwNtAO$4.FQpB2pGpEpDqLsSvJxOyOxXvGrRR3.NrNvDxQxPuXqP$3.ESpJpSpXpWqCrMtOvRxWyOxWuOpV6.CpHtWxCxPvIrM$3.PpMqEqNqQqXsBtQvKxJ2yOvWqW8.GpXuNxFxBuWrJ$2.HpIqIrArIrPsJtLuQwGxWyOyHuHL9.XsPwExEwEtWqU$2.UqCrDrSsCsQtItXuWwIyDyOyDtK10.PsIvTwXwKuSsPqC$.GpMqUrTsJsUtItOtWuOwFyHyOyJtF10.LtIwMxAwDuUtFrHpJ$.PqErMsJsWtKtOtKtNuIwAyN2yOtVpF9.pRvKxRxCvPuFsUrOqIpCJ$.pBqRrXsStHtOtL2tEuDwE3yOvIrHpKK7.sKxWyOwUuStDrWrDqLpTpGR$DpLrCsHtAtJtMtGsXtDuHwR2yOyHwAsSqUpPO3.DqGpKvH2yOwCtMrSqQqEqApXpUpMJ$GpQrHsJsXtHtItBtAtMvByC2yOyAvHsNrFqBU3.qVrStD2yOyNvEsGqLpKpApFpQqCqApA$HpSrGsGsSsXtBsXtHuHwJ3yOxOuGrRqQpXQ2.qLqWsCwC2yOyIwTuVqXJ.JpEqAqFpI$HpPrArVsHsKsRtCtXvN4yOtGpQXSQRUpBpJpUrJxQ2yOxTwDvBuQtAW.HpMpUpC$CVpTqJqPqUrStNwA4yOtA6.BEISqExH2yOxPwDvEuUuBqW.BpCpHM$.KpApJpNpRrAtPyI3yOuHS10.WvQyOyNxNwHvLuTtQrO2.MN$.CJ2NMqAtQ3yOuVrMR11.pIsDvGvOvBuOuCtGrJ$2.A2CANtR2yOxQsQrHX10.CpPrJrWrXtE2tSsXqV$7.uIyLyOtLsKrIpJ10.LpUqWrErBrLsUtKsSqG$7.uCyAyMsUsIrMqCK9.TqAqP2qOqVrVsUsJpM$7.sNxExLsMsErTqSpHE7.KpJqEqJqGqEqNrHsBrMN$7.qBvUvJ3rVrJqKpEH5.IpApTqFqDpXpWqEqSrCqH$8.uBtJqPrBrNrQrHqMpNRKIKRpHpTqEqCpTpOpNpUqEqCR$8.rUrLOpNqHrCrMrLrAqKpWpRpSpWqGqEqCpRpLpHpG2pJS$8.pApW2.FpFqEqWrHrGrDqVqRqMqFpXpNpFXUSRI$9.P5.HpEpQ2qCpVpNpEVPJDC$19.B$17.CUS$16.OpOpSpXqD$17.GJLPS!"},
+            {"code":">4","name":"subfamily: Synorbinae","cname":"連球亞科"}
+]
+"""
+            self.animal_data = json.loads(animals_json_content)
+            if is_replace:
+                STATUS.append("> lifeforms reloaded")
+        except IOError:
+            pass
+        except json.JSONDecodeError as e:
+            STATUS.append("> JSON file error")
+            print(e)
+
+    def read_found_animals(self):
+        try:
+            with open(self.FOUND_ANIMALS_PATH, 'r', encoding='utf-8') as file:
+                st = file.read()
+                st = "[" + st[:-2] + "]"
+                new_found_animal_data = json.loads(st)
+                self.found_animal_data = new_found_animal_data
+        except IOError:
+            pass
+        except json.JSONDecodeError as e:
+            print(e)
+
+    def load_animal_id(self, world, id, **kwargs):
+        if self.animal_data is None or self.animal_data == []:
+            return
+        self.animal_id = max(0, min(len(self.animal_data)-1, id))
+        self.load_part(world, Board.from_data(self.animal_data[self.animal_id]), **kwargs)
+
+    def load_found_animal_id(self, world, id, **kwargs):
+        if self.found_animal_data is None or self.found_animal_data == []:
+            return
+        self.found_animal_id = max(0, min(len(self.found_animal_data)-1, id))
+        self.load_part(world, Board.from_data(self.found_animal_data[self.found_animal_id]), is_use_part_R=True, **kwargs)
+        self.world.names = ['Found #' + str(self.found_animal_id + 1), '', '']
+
+    def load_animal_code(self, world, code, **kwargs):
+        if self.animal_data is None or self.animal_data == []:
+            return
+        if not code: return
+        id = self.get_animal_id(code)
+        if id is not None and id != -1:
+            self.load_animal_id(world, id, **kwargs)
+
+    def get_animal_id(self, code):
+        if self.animal_data is None or self.animal_data == []:
+            return -1
+        code_sp = code.split(':')
+        n = int(code_sp[1]) if len(code_sp)==2 else 1
+        itr = (id for (id, data) in enumerate(self.animal_data) if data["code"]==code_sp[0])
+        for i in range(n):
+            id = next(itr, None)
+        return id
+
+    def search_animal_id(self, prefix, old_id, dir):
+        if self.animal_data is None or self.animal_data == []:
+            return
+        id = old_id + dir
+        while id >= 0 and id < len(self.animal_data):
+            if self.animal_data[id]["name"].startswith(prefix):
+                return id
+            else:
+                id += dir
+        return old_id
+
+    def search_animal(self, world, prefix, dir):
+        if self.animal_data is None or self.animal_data == []:
+            return
+        id = self.animal_id
+        if dir == +1:
+            id = self.search_animal_id(prefix, id, dir)
+        elif dir == -1:
+            id = self.search_animal_id(prefix, id, dir)
+            id = self.search_animal_id(prefix, id, dir)
+        while id < len(self.animal_data) and self.animal_data[id]["code"].startswith(">"):
+            id += 1
+        self.load_animal_id(world, id)
+
+    # Dummy load_part method
+    def load_part(self, world, data, is_use_part_R=False):
+        # In a real scenario, this would load the animal part into the world
+        print(f"Loading part into world: {data.get('name', 'Unnamed')}")
+
+
+# Helper Methods (outside Lenia class)
+def ch2val(c):
+    if c in '.b': return 0
+    elif c == 'o': return 255
+    elif len(c) == 1: return ord(c) - ord('A') + 1
+    else: return (ord(c[0]) - ord('p')) * 24 + (ord(c[1]) - ord('A') + 25)
+
+def _append_stack(list1, list2, count, is_repeat=False):
+    list1.append(list2)
+    if count != '':
+        repeated = list2 if is_repeat else []
+        list1.extend([repeated] * (int(count) - 1))
+
+def _recur_get_max_lens(dim, list1, max_lens):
+    max_lens[dim] = max(max_lens[dim], len(list1))
+    if dim < DIM - 1:
+        for list2 in list1:
+            _recur_get_max_lens(dim + 1, list2, max_lens)
+
+def _recur_cubify(dim, list1, max_lens):
+    more = max_lens[dim] - len(list1)
+    if dim < DIM - 1:
+        list1.extend([[]] * more)
+        for list2 in list1:
+            _recur_cubify(dim + 1, list2, max_lens)
+    else:
+        list1.extend([0] * more)
+
+# Conversion function
+def rle2arr(st):
+    if st is None:
+        return np.zeros((1,1), dtype=np.float32) # Return a minimal array for None input
+
+    stacks = [[] for dim in range(DIM)]
+    last, count = '', ''
+    
+    # Define delimiters for dimensions
+    delims = list(DIM_DELIM.values())
+    
+    # Process the string, remove the trailing '!' and append the final delimiter
+    st = st.rstrip('!') + DIM_DELIM[DIM - 1]
+    
+    for ch in st:
+        if ch.isdigit():  # Accumulate the count
+            count += ch
+        elif ch in 'pqrstuvwxy@':  # Accumulate the character (value)
+            last = ch
+        else:  # Process the combination of last character and the current character
+            # Check if the character and last one form a valid delimiter
+            if last + ch not in delims:
+                # If not a delimiter, append the value (as a fraction of 255)
+                val = ch2val(last + ch) / 255
+                _append_stack(stacks[0], val, count, is_repeat=True)
+            else:
+                # If it's a delimiter, process the stack across dimensions
+                dim_idx = delims.index(last + ch)
+                for d in range(dim_idx): # Use dim_idx here
+                    _append_stack(stacks[d + 1], stacks[d], count, is_repeat=False)
+                    stacks[d] = []  # Clear the stack for this dimension
+                
+                # Reset last and count for the next set of values
+            last, count = '', ''
+    
+    # Final stack is the result
+    A = stacks[DIM - 1]
+    
+    # Get the maximum lengths for each dimension
+    max_lens = [0 for dim in range(DIM)]
+    _recur_get_max_lens(0, A, max_lens)
+    
+    # "Cubify" the array (make it a uniform shape if needed)
+    _recur_cubify(0, A, max_lens)
+    
+    # Return the final 2D array as a NumPy array
+    return np.asarray(A)
+
+def convert_to_new_format(animal):
+    # Check if 'params' exists in the original animal data
+    if 'params' not in animal:
+        return None
+
+    # Extract the parameters from the original data
+    params = animal['params']
+    if isinstance(params['b'], str):
+        b_values = params['b'].split(',')
+        b_values = [eval(value.strip()) for value in b_values]  # Convert to numbers (int/float)
+    else:
+        b_values = [params['b']]  # If b is already a list or number, use it as is
+
+    # Create a list of kernels based on the original params
+    kernels = [{
+        'b': b_values,
+        'm': params['m'],
+        's': params['s'],
+
+    }]
+
+    # Extract cells from the original data
+    cells = rle2arr(animal['cells'] if 'cells' in animal else None)
+    if len(cells.shape) == 3:
+        cells = cells[0]
+    
+    # Return the newly formatted dictionary
+    return {
+        'name': animal['name'],
+        'R': params.get('R', 10),  # Default to 10 if R is not provided
+        'T': params.get('T', 5),   # Default to 5 if T is not provided
+        'kernels': kernels,
+        'cells': cells
+    }
+
+def give_conv_from_name(animal_name):
+  # Initialize Lenia to load animal data
+  lenia = Lenia()
+
+  animal = lenia.search_animal_by_name(animal_name)
+  if animal:
+      print(f"Found animal: {animal['name']}")
+      return convert_to_new_format(animal)
+  else:
+      print(f"Animal '{animal_name}' not found.")
+      return None
+"""
